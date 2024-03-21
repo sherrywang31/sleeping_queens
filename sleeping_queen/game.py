@@ -1,50 +1,8 @@
-from dataclasses import dataclass
-import random
-from typing import List, Optional
+from sleeping_queen.data_type import Card, Deck, Player
+from typing import List
 from itertools import combinations
 import sys
-
-@dataclass
-class Card:
-    name: str
-    point: Optional[int] = None
-    
-@dataclass
-class Deck:
-    cards: List[str]
-
-    def shuffle(self):
-        random.shuffle(self.cards)
-
-    def count(self):
-        return(len(self.cards))
-    
-    def draw(self):
-        return self.cards.pop(0)
-    
-rose_queen = Card('Rose Queen', 5)
-cat_queen = Card('Cat Queen', 15)
-dog_queen = Card('Dog Queen', 15)
-queen_5 = Card('Queen 5', 5)
-queen_10 = Card('Queen 10', 10)
-queen_15 = Card('Queen 15', 15)
-queen_20 = Card('Queen 20', 20)
-king = Card('King')
-jester = Card('Jester')
-knight = Card('Knight')
-potion = Card('Potion')
-wand = Card('Wand')
-dragon = Card('Dragon')
-one= Card('1', 1)
-two = Card('2', 2)
-three = Card('3', 3)
-four = Card('4', 4)
-five = Card('5', 5)
-six = Card('6', 6)
-seven = Card('7', 7)
-eight = Card('8', 8)
-nine = Card('9', 9)
-ten = Card('10', 10)
+from sleeping_queen.cards import king, jester, knight, potion, wand, dragon, one, two, three, four, five, six, seven, eight, nine, ten, cat_queen, dog_queen, rose_queen, queen_5, queen_10, queen_15, queen_20
 
 ALL_CARDS = Deck([king] * 8 + 
             [jester] * 5 + 
@@ -54,60 +12,6 @@ ALL_CARDS = Deck([king] * 8 +
             [dragon] * 3 + 
             ([one] + [two] + [three] + [four] + [five] + [six] + [seven] + [eight] + [nine] + [ten]) * 4)
 QUEENS = Deck([cat_queen] + [dog_queen] + [rose_queen] + [queen_5] * 3 + [queen_10] * 4 + [queen_15] + [queen_20])
-
-
-@dataclass
-class Player:
-    name: str
-    hand: List[Card]
-    queens: List[Card] # TODO: queens should be a separate class?
-
-    def score(self):
-        return sum([card.point for card in self.queens])
-    
-
-    def draw(self, draw_pile:Deck, count: int) -> List[Card]:
-        '''
-        Current player draws count cards from the draw pile.
-        '''
-        draws = []
-        for _ in range(count):
-            draws.append(draw_pile.draw())
-        self.hand = self.hand + draws
-        return(draws)
-
-    def play(self, cards: List[Card]) -> None:
-        '''
-        Current player plays a card from their hand. 
-        It is removed from their hand and added to the discard pile.
-        '''
-        for card in cards:
-            self.hand.remove(card)
-
-    def success(self) -> bool:
-        score = self.score() >= 50
-        queens = len(self.queens) >= 5
-        return score or queens
-    
-    def _dog_cat_together(self, queen:Card) -> bool:
-        if queen == cat_queen:
-            return dog_queen in self.queens
-        if queen == dog_queen:
-            return cat_queen in self.queens
-        return False
-    
-    def _draw_queen(self, queen_pile:Deck) -> Card:
-        queen = self.draw(queen_pile, 1)[0] # only 1 item in the list
-        if not self._dog_cat_together(queen):
-            self.queens.append(queen)
-        else: # can't draw this queen. put it back to the queen pile
-            queen_pile.cards = [queen] + queen_pile.cards
-        return(queen)
-    
-    def wake_queen(self, queen_pile:Deck) -> None:
-        queen = self._draw_queen(queen_pile)
-        if queen.name == 'Rose Queen':
-            self._draw_queen(queen_pile)
 
 class Game:
     def __init__(self, players: List[Player]):
@@ -136,12 +40,14 @@ class Game:
         opponent = 0 if current_player == 1 else 1
         opponent = self.players[opponent]
         if not all([card in player.hand for card in cards_to_play]):
+            print(f'Invalid input. You do not have {cards_to_play} in hands. Try again.')
             return False
         if any(card in [dragon, wand] for card in cards_to_play):
             print(f'Invalid input. {cards_to_play} can not be played. Try again.')
             return False
         if len(cards_to_play) == 1:
             if cards_to_play[0] in [king, knight, potion]:
+                print(len(opponent.queens))
                 if len(opponent.queens) == 0:
                     print(f'Invalid input. {cards_to_play} can not be played because opponent has no queen. Try again.')
                     return False
@@ -157,15 +63,18 @@ class Game:
                 return self._check_sum([c.point for c in cards_to_play])
         return True
     
+    def executeCardEffect(self, card:Card, player:Player):
+        card.effect(game=self, player=player)
+
     def knight_effect(self, current_player:int):
-        self.discard_pile = self.players[current_player].play(self.discard_pile, [knight])
+        self.players[current_player].play(cards=[knight], game=self)
         passive_player = 0 if current_player == 1 else 1
         if dragon in self.players[passive_player].hand:
             action = input('Do you want to play the dragon? (y/n)')
             if action == 'y':
-                self.discard_pile = self.players[passive_player].play(self.discard_pile, [dragon])
-                self.draw_pile, _ = self.players[passive_player].draw(self.draw_pile, 1)
-                self.draw_pile, _ = self.players[current_player].draw(self.draw_pile, 1)
+                self.players[passive_player].play(cards=[dragon], game=self)
+                self.players[passive_player].draw(self, 1)
+                self.players[current_player].draw(self, 1)
         action = input('Pick a queue from {opponent.queens}')
         while action not in [queen.name for queen in self.players[passive_player].queens]:
             action = input('Invalid input: {action}. Pick a queue from {opponent.queens}')
@@ -173,14 +82,14 @@ class Game:
         self.players[current_player].queens.append(globals()[action])
         
     def potion_effect(self, current_player:int):
-        self.discard_pile = self.players[current_player].play(self.discard_pile, [potion])
+        self.players[current_player].play(cards=[potion],game=self)
         passive_player = 0 if current_player == 1 else 1
         if wand in self.players[passive_player].hand:
             action = input('Do you want to play the wand? (y/n)')
             if action == 'y':
-                self.discard_pile = self.players[passive_player].play(self.discard_pile, [wand])
-                self.draw_pile, _ = self.players[passive_player].draw(self.draw_pile, 1)
-                self.draw_pile, _ = self.players[current_player].draw(self.draw_pile, 1)
+                self.players[passive_player].play(cards=[wand],game=self)
+                self.players[passive_player].draw(self, 1)
+                self.players[current_player].draw(self, 1)
         action = input('Pick a queue from {opponent.queens}')
         while action not in [queen.name for queen in self.players[passive_player].queens]:
             action = input('Invalid input: {action}. Pick a queen from {opponent.queens}')
@@ -188,9 +97,9 @@ class Game:
         self.queens.append(globals()[action])
     
     def jester_effect(self, current_player:int):
-        self.discard_pile = self.players[current_player].play(self.discard_pile, [jester])
+        self.players[current_player].play(cards=[jester],game=self)
         while self.draw_pile[0] in [king, knight, potion, wand, dragon]:
-            self.draw_pile, _ = self.players[current_player].draw(self.draw_pile, 1)
+            self.players[current_player].draw(self, 1)
         else:
             if self.draw_pile[0] in [one, three, five, seven, nine]:
                 self.players[current_player].wake_queen(self.queen_pile)
@@ -198,8 +107,7 @@ class Game:
                 self.players[0 if current_player == 1 else 1].wake_queen(self.queen_pile)
 
     def king_effect(self, current_player:int):
-        self.players[current_player].play([king])
-        self.discard_pile.append(king)
+        self.players[current_player].play(cards=[king],game=self)
         self.players[current_player].wake_queen(self.queen_pile)
         
     def step(self):
@@ -208,7 +116,7 @@ class Game:
             self.draw_pile.shuffle()
             self.queen_pile.shuffle()
             for player in self.players:
-                player.draw(self.draw_pile, 5)
+                player.draw(self, 5)
         self.round += 1
         current_player = 0
         print(f'Round {self.round}')
@@ -228,9 +136,8 @@ class Game:
                 cards_valid = self._play_cards_legal(current_player, cards_to_play)
             if cards_to_play > 1:
                 # discard cards and draw
-                player.play(cards_to_play)
-                self.discard_pile.append(cards_to_play)
-                player.draw(self.draw_pile, len(cards_to_play))
+                player.play(cards_to_play, self)
+                player.draw(self, len(cards_to_play))
             else: # always take the first card because cards_to_play only has 1 card
                 if cards_to_play[0] == knight:
                     self.knight_effect(current_player)
@@ -241,11 +148,10 @@ class Game:
                 elif cards_to_play[0] == king:
                     self.king_effect(current_player)
                 else: # discard cards and draw
-                    player.play(cards_to_play)
-                    self.discard_pile.append(cards_to_play)
-                    player.draw(self.draw_pile, len(cards_to_play))
+                    player.play(cards_to_play, self)
+                    player.draw(self, len(cards_to_play))
             # draw
-            player.draw(self.draw_pile, 1)
+            player.draw(self, 1)
             # check if game is over
             if player.success():
                 print(f'{player.name} won!')
