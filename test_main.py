@@ -5,7 +5,7 @@ from main import Card, Deck, Player, Game
 def player1():
     return Player(name='Player 1', 
                   hand=[Card('1', 1),Card('1', 1),Card('3', 3), Card('Dragon'), Card('King')], 
-                  queens=[Card('Rose Queen', 5),Card('Cat Queen', 15)])
+                  queens=[Card('Queen 5', 5),Card('Cat Queen', 15)])
 @pytest.fixture
 def player2():
     return Player(name='Player 2', 
@@ -14,18 +14,18 @@ def player2():
 
 @pytest.fixture
 def draw_pile():
-    return Deck([Card('Potion'), Card('2', 2), Card('3', 3), Card('4', 4)])
+    return Deck(cards = [Card('Potion'), Card('2', 2), Card('3', 3), Card('4', 4)])
 
 @pytest.fixture
 def discard_pile():
-    return Deck([Card('King'), Card('1', 1), Card('King'), Card('2', 2), Card('3', 3)])
+    return Deck(cards=[Card('King'), Card('1', 1), Card('King'), Card('2', 2), Card('3', 3)])
 
 @pytest.fixture
 def game(player1, player2, discard_pile, draw_pile):
     game = Game([player1, player2])
     game.discards = discard_pile
     game.draw_pile = draw_pile
-    game.queen_pile = [Card('Dog Queen', 15), Card('Queen 20', 20), Card('Queen 15', 15)]
+    game.queen_pile = Deck(cards = [Card('Dog Queen', 15), Card('Rose Queen', 5), Card('Queen 20', 20), Card('Queen 15', 15)])
     game.round = 1
     return game
 
@@ -50,16 +50,32 @@ class TestPlayer:
     def test_success_true(self):
         player_score = Player(name='Player 1', 
                             hand=[], 
-                            queens=[Card('Rose Queen', 5), Card('Cat Queen', 15), Card('Queen 20', 20), Card('Queen 10', 10)])
+                            queens=[Card('Queen 5', 5), Card('Cat Queen', 15), Card('Queen 20', 20), Card('Queen 10', 10)])
         player_nqueue = Player(name='Player 1', 
                             hand=[], 
-                            queens=[Card('Rose Queen', 0), Card('Cat Queen', 0), Card('Queen 5', 0), Card('Queen 5', 0), Card('Queen 5', 0)])
+                            queens=[Card('Queen 5', 0), Card('Cat Queen', 0), Card('Queen 5', 0), Card('Queen 5', 0), Card('Queen 5', 0)])
         assert player_score.success() == True
         assert player_nqueue.success() == True
     
     def test_dog_cat_together(self, player1, player2, game):
         assert player1._dog_cat_together(queen = Card('Dog Queen', 15)) == True
         assert player2._dog_cat_together(queen = Card('Cat Queen', 15)) == False
+
+    def test_draw_queen(self, game, player1, player2):
+        queen = player1._draw_queen(game.queen_pile)
+        assert queen == Card('Dog Queen', 15)
+        assert player1.queens == [Card('Queen 5', 5), Card('Cat Queen', 15)]
+        queen = player2._draw_queen(game.queen_pile)
+        assert queen == Card('Dog Queen', 15)
+        assert player2.queens == [Card('Dog Queen',15)]
+    
+    def test_wake_queen(self, player2, game):
+        game.queen_pile = Deck(cards = [Card('Rose Queen', 5), Card('Queen 20', 20), Card('Queen 15', 15)])
+        player2.wake_queen(game.queen_pile)
+        assert player2.queens == [Card('Rose Queen', 5), Card('Queen 20', 20)]
+        assert game.queen_pile == Deck(cards = [Card('Queen 15', 15)])
+
+
 
 
 class TestGame:

@@ -76,7 +76,7 @@ class Player:
         self.hand = self.hand + draws
         return(draws)
 
-    def play(self, cards: List[Card]):
+    def play(self, cards: List[Card]) -> None:
         '''
         Current player plays a card from their hand. 
         It is removed from their hand and added to the discard pile.
@@ -95,7 +95,20 @@ class Player:
         if queen == dog_queen:
             return cat_queen in self.queens
         return False
-            
+    
+    def _draw_queen(self, queen_pile:Deck) -> Card:
+        queen = self.draw(queen_pile, 1)[0] # only 1 item in the list
+        if not self._dog_cat_together(queen):
+            self.queens.append(queen)
+        else: # can't draw this queen. put it back to the queen pile
+            queen_pile.cards = [queen] + queen_pile.cards
+        return(queen)
+    
+    def wake_queen(self, queen_pile:Deck) -> None:
+        queen = self._draw_queen(queen_pile)
+        if queen.name == 'Rose Queen':
+            self._draw_queen(queen_pile)
+
 class Game:
     def __init__(self, players: List[Player]):
         self.players = players
@@ -180,25 +193,14 @@ class Game:
             self.draw_pile, _ = self.players[current_player].draw(self.draw_pile, 1)
         else:
             if self.draw_pile[0] in [one, three, five, seven, nine]:
-                self.players[current_player] = self._awaken_queen(self.players[current_player])
+                self.players[current_player].wake_queen(self.queen_pile)
             else:
-                self.players[0 if current_player == 1 else 1] = self._awaken_queen(self.players[0 if current_player == 1 else 1])
-
-    def _awaken_queen(self, player: Player) -> Player:
-        queen = player.draw(self.queen_pile, 1)
-        if not self._dog_cat_together(queen, player):
-            self.queen_pile.remove(queen)
-            player.queens.append(queen)
-        if queen.name == 'rose':
-            queen = player.draw(self.queens, 1)
-            if not self._dog_cat_together(queen, player):
-                self.queen_pile.remove(queen)
-                player.queens.append(queen)
-        return(player)
+                self.players[0 if current_player == 1 else 1].wake_queen(self.queen_pile)
 
     def king_effect(self, current_player:int):
-        self.discard_pile = self.players[current_player].play(self.discard_pile, [king])
-        self.players[current_player] = self._awaken_queen(self.players[current_player])
+        self.players[current_player].play([king])
+        self.discard_pile.append(king)
+        self.players[current_player].wake_queen(self.queen_pile)
         
     def step(self):
         if self.round == 0:
