@@ -46,15 +46,14 @@ eight = Card('8', 8)
 nine = Card('9', 9)
 ten = Card('10', 10)
 
-draw_pile = Deck([king] * 8 + 
+ALL_CARDS = Deck([king] * 8 + 
             [jester] * 5 + 
             [knight] * 4 + 
             [potion] * 4 + 
             [wand] * 3 + 
             [dragon] * 3 + 
             ([one] + [two] + [three] + [four] + [five] + [six] + [seven] + [eight] + [nine] + [ten]) * 4)
-queens = Deck([cat_queen] + [dog_queen] + [rose_queen] + [queen_5] * 3 + [queen_10] * 4 + [queen_15] + [queen_20])
-discards = Deck([])
+QUEENS = Deck([cat_queen] + [dog_queen] + [rose_queen] + [queen_5] * 3 + [queen_10] * 4 + [queen_15] + [queen_20])
 
 
 @dataclass
@@ -67,7 +66,7 @@ class Player:
         return sum([card.point for card in self.queens])
     
 
-    def draw(self, draw_pile:Deck, count: int) -> Deck:
+    def draw(self, draw_pile:Deck, count: int) -> List[Card]:
         '''
         Current player draws count cards from the draw pile.
         '''
@@ -75,17 +74,15 @@ class Player:
         for _ in range(count):
             draws.append(draw_pile.draw())
         self.hand = self.hand + draws
-        return(draw_pile, draws)
+        return(draws)
 
-    def play(self, discards:Deck, cards: List[Card]):
+    def play(self, cards: List[Card]):
         '''
         Current player plays a card from their hand. 
         It is removed from their hand and added to the discard pile.
         '''
         for card in cards:
             self.hand.remove(card)
-            discards.cards.append(card)
-        return(discards)
 
     def success(self) -> bool:
         score = self.score() >= 50
@@ -102,9 +99,9 @@ class Player:
 class Game:
     def __init__(self, players: List[Player]):
         self.players = players
-        self.draw_pile = draw_pile
-        self.discards = discards
-        self.queen_pile = queens
+        self.draw_pile = ALL_CARDS
+        self.queen_pile = QUEENS
+        self.discard_pile = []
         self.round = 0
         self.end_game = False
     
@@ -148,12 +145,12 @@ class Game:
         return True
     
     def knight_effect(self, current_player:int):
-        self.discards = self.players[current_player].play(self.discards, [knight])
+        self.discard_pile = self.players[current_player].play(self.discard_pile, [knight])
         passive_player = 0 if current_player == 1 else 1
         if dragon in self.players[passive_player].hand:
             action = input('Do you want to play the dragon? (y/n)')
             if action == 'y':
-                self.discards = self.players[passive_player].play(self.discards, [dragon])
+                self.discard_pile = self.players[passive_player].play(self.discard_pile, [dragon])
                 self.draw_pile, _ = self.players[passive_player].draw(self.draw_pile, 1)
                 self.draw_pile, _ = self.players[current_player].draw(self.draw_pile, 1)
         action = input('Pick a queue from {opponent.queens}')
@@ -163,12 +160,12 @@ class Game:
         self.players[current_player].queens.append(globals()[action])
         
     def potion_effect(self, current_player:int):
-        self.discards = self.players[current_player].play(self.discards, [potion])
+        self.discard_pile = self.players[current_player].play(self.discard_pile, [potion])
         passive_player = 0 if current_player == 1 else 1
         if wand in self.players[passive_player].hand:
             action = input('Do you want to play the wand? (y/n)')
             if action == 'y':
-                self.discards = self.players[passive_player].play(self.discards, [wand])
+                self.discard_pile = self.players[passive_player].play(self.discard_pile, [wand])
                 self.draw_pile, _ = self.players[passive_player].draw(self.draw_pile, 1)
                 self.draw_pile, _ = self.players[current_player].draw(self.draw_pile, 1)
         action = input('Pick a queue from {opponent.queens}')
@@ -178,7 +175,7 @@ class Game:
         self.queens.append(globals()[action])
     
     def jester_effect(self, current_player:int):
-        self.discards = self.players[current_player].play(self.discards, [jester])
+        self.discard_pile = self.players[current_player].play(self.discard_pile, [jester])
         while self.draw_pile[0] in [king, knight, potion, wand, dragon]:
             self.draw_pile, _ = self.players[current_player].draw(self.draw_pile, 1)
         else:
@@ -188,19 +185,19 @@ class Game:
                 self.players[0 if current_player == 1 else 1] = self._awaken_queen(self.players[0 if current_player == 1 else 1])
 
     def _awaken_queen(self, player: Player) -> Player:
-        self.queen_pile, queen = player.draw(self.queen_pile, 1)
+        queen = player.draw(self.queen_pile, 1)
         if not self._dog_cat_together(queen, player):
             self.queen_pile.remove(queen)
             player.queens.append(queen)
         if queen.name == 'rose':
-            self.queen_pile, queen = player.draw(self.queens, 1)
+            queen = player.draw(self.queens, 1)
             if not self._dog_cat_together(queen, player):
                 self.queen_pile.remove(queen)
                 player.queens.append(queen)
         return(player)
 
     def king_effect(self, current_player:int):
-        self.discards = self.players[current_player].play(self.discards, [king])
+        self.discard_pile = self.players[current_player].play(self.discard_pile, [king])
         self.players[current_player] = self._awaken_queen(self.players[current_player])
         
     def step(self):
@@ -209,7 +206,7 @@ class Game:
             self.draw_pile.shuffle()
             self.queen_pile.shuffle()
             for player in self.players:
-                self.draw_pile = player.draw(self.draw_pile, 5)
+                player.draw(self.draw_pile, 5)
         self.round += 1
         current_player = 0
         print(f'Round {self.round}')
@@ -229,8 +226,9 @@ class Game:
                 cards_valid = self._play_cards_legal(current_player, cards_to_play)
             if cards_to_play > 1:
                 # discard cards and draw
-                self.discards = player.play(self.discards, cards_to_play)
-                self.draw_pile, _ = player.draw(self.draw_pile, len(cards_to_play))
+                player.play(cards_to_play)
+                self.discard_pile.append(cards_to_play)
+                player.draw(self.draw_pile, len(cards_to_play))
             else: # always take the first card because cards_to_play only has 1 card
                 if cards_to_play[0] == knight:
                     self.knight_effect(current_player)
@@ -241,10 +239,11 @@ class Game:
                 elif cards_to_play[0] == king:
                     self.king_effect(current_player)
                 else: # discard cards and draw
-                    self.discards = player.play(self.discards, cards_to_play)
-                    self.draw_pile, _ = player.draw(self.draw_pile, len(cards_to_play))
+                    player.play(cards_to_play)
+                    self.discard_pile.append(cards_to_play)
+                    player.draw(self.draw_pile, len(cards_to_play))
             # draw
-            self.draw_pile, _ = player.draw(self.draw_pile, 1)
+            player.draw(self.draw_pile, 1)
             # check if game is over
             if player.success():
                 print(f'{player.name} won!')
@@ -257,6 +256,6 @@ class Game:
 if __name__ == '__main__':
     player1 = Player('Player 1', [], [])
     player2 = Player('Player 2', [], [])
-    game = Game([player1, player2], draw_pile, discards, queens)
+    game = Game([player1, player2])
     while not game.end_game:
         game.step()

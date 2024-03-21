@@ -24,7 +24,8 @@ def discard_pile():
 def game(player1, player2, discard_pile, draw_pile):
     game = Game([player1, player2])
     game.discards = discard_pile
-    game.queens = [Card('Dog Queen', 15), Card('Queen 20', 20), Card('Queen 15', 15)]
+    game.draw_pile = draw_pile
+    game.queen_pile = [Card('Dog Queen', 15), Card('Queen 20', 20), Card('Queen 15', 15)]
     game.round = 1
     return game
 
@@ -32,17 +33,15 @@ class TestPlayer:
     def test_score(self, player1):
         assert player1.score() == 20
 
-    def test_draw(self, draw_pile, player1):
+    def test_draw(self, game, player1):
         draw_count = 2
-        new_draw_pile, draws = player1.draw(draw_pile, draw_count)
-        print(player1.hand)
+        draws = player1.draw(game.draw_pile, draw_count)
         assert player1.hand == [Card('1', 1),Card('1', 1),Card('3', 3),Card('Dragon'), Card('King'), Card('Potion'), Card('2', 2)]
         assert draws == [Card('Potion'), Card('2', 2)]
-        assert new_draw_pile == Deck(cards = [Card('3', 3), Card('4', 4)])
+        assert game.draw_pile == Deck(cards = [Card('3', 3), Card('4', 4)])
 
-    def test_play(self, player1, discard_pile):
-        discards = player1.play(discards = discard_pile, cards = [Card('1', 1), Card('1', 1)])
-        assert discards == Deck(cards = [Card('King'), Card('1', 1), Card('King'), Card('2', 2), Card('3', 3), Card('1', 1), Card('1', 1)])
+    def test_play(self, player1):
+        player1.play(cards = [Card('1', 1), Card('1', 1)])
         assert player1.hand == [Card('3', 3),Card('Dragon'),Card('King')]
     
     def test_success_false(self, player1):
