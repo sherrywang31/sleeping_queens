@@ -57,7 +57,10 @@ class TestPlayer:
                             queens=[Card('Rose Queen', 0), Card('Cat Queen', 0), Card('Queen 5', 0), Card('Queen 5', 0), Card('Queen 5', 0)])
         assert player_score.success() == True
         assert player_nqueue.success() == True
-
+    
+    def test_dog_cat_together(self, player1, player2, game):
+        assert player1._dog_cat_together(queen = Card('Dog Queen', 15)) == True
+        assert player2._dog_cat_together(queen = Card('Cat Queen', 15)) == False
 
 
 class TestGame:
@@ -78,14 +81,7 @@ class TestGame:
         assert game._play_cards_legal(current_player = 0, cards_to_play = [Card('1', 1), Card('1', 1), Card('5', 1)]) == False
         assert game._play_cards_legal(current_player = 1, cards_to_play = [Card('Potion')]) == True
         assert game._play_cards_legal(current_player = 1, cards_to_play = [Card('King')]) == True
-        assert game._play_cards_legal(current_player = 1, cards_to_play = [Card('2', 2), Card('3', 3), Card('5', 5)]) == True
-
-    def test_dog_cat_together(self, player1, player2, game):
-        assert game._dog_cat_together(queen = Card('Dog Queen', 15), player=player1) == True
-        assert game._dog_cat_together(queen = Card('Cat Queen', 15), player=player2) == False
-
-    def test_awaken_queen(self):
-        pass
+        assert game._play_cards_legal(current_player = 1, cards_to_play = [Card('2', 2), Card('3', 3), Card('5', 5)]) == True        
     
     def test_knight_effect(self):
         pass

@@ -91,13 +91,20 @@ class Player:
         score = self.score() >= 50
         queens = len(self.queens) >= 5
         return score or queens
+    
+    def _dog_cat_together(self, queen:Card) -> bool:
+        if queen == cat_queen:
+            return dog_queen in self.queens
+        if queen == dog_queen:
+            return cat_queen in self.queens
+        return False
             
 class Game:
     def __init__(self, players: List[Player]):
         self.players = players
         self.draw_pile = draw_pile
         self.discards = discards
-        self.queens = queens
+        self.queen_pile = queens
         self.round = 0
         self.end_game = False
     
@@ -176,37 +183,31 @@ class Game:
             self.draw_pile, _ = self.players[current_player].draw(self.draw_pile, 1)
         else:
             if self.draw_pile[0] in [one, three, five, seven, nine]:
-                self._awaken_queen(self.players[current_player])
+                self.players[current_player] = self._awaken_queen(self.players[current_player])
             else:
-                self._awaken_queen(self.players[0 if current_player == 1 else 1])
+                self.players[0 if current_player == 1 else 1] = self._awaken_queen(self.players[0 if current_player == 1 else 1])
 
-    def _dog_cat_together(self, queen:Card, player: Player) -> bool:
-        if queen == cat_queen:
-            return dog_queen in player.queens
-        if queen == dog_queen:
-            return cat_queen in player.queens
-        return False
-
-    def _awaken_queen(self, player: Player):
-        self.queens, queen = player.draw(self.queens, 1)
+    def _awaken_queen(self, player: Player) -> Player:
+        self.queen_pile, queen = player.draw(self.queen_pile, 1)
         if not self._dog_cat_together(queen, player):
-            self.queens.remove(queen)
+            self.queen_pile.remove(queen)
             player.queens.append(queen)
         if queen.name == 'rose':
-            self.queens, queen = player.draw(self.queens, 1)
+            self.queen_pile, queen = player.draw(self.queens, 1)
             if not self._dog_cat_together(queen, player):
-                self.queens.remove(queen)
+                self.queen_pile.remove(queen)
                 player.queens.append(queen)
+        return(player)
 
     def king_effect(self, current_player:int):
         self.discards = self.players[current_player].play(self.discards, [king])
-        self._awaken_queen(self.players[current_player])
+        self.players[current_player] = self._awaken_queen(self.players[current_player])
         
     def step(self):
         if self.round == 0:
             # initial setup
             self.draw_pile.shuffle()
-            self.queens.shuffle()
+            self.queen_pile.shuffle()
             for player in self.players:
                 self.draw_pile = player.draw(self.draw_pile, 5)
         self.round += 1
