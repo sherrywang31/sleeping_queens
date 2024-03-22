@@ -75,21 +75,6 @@ class Game:
     
     def executeCardEffect(self, card:Card, player:Player):
         card.effect(game=self, player=player)
-        
-    def potion_effect(self, current_player:int):
-        self.players[current_player].play(cards=[potion],game=self)
-        passive_player = 0 if current_player == 1 else 1
-        if wand in self.players[passive_player].hand:
-            action = input('Do you want to play the wand? (y/n)')
-            if action == 'y':
-                self.players[passive_player].play(cards=[wand],game=self)
-                self.players[passive_player].draw(self, 1)
-                self.players[current_player].draw(self, 1)
-        action = input('Pick a queue from {opponent.queens}')
-        while action not in [queen.name for queen in self.players[passive_player].queens]:
-            action = input('Invalid input: {action}. Pick a queen from {opponent.queens}')
-        self.players[passive_player].queens.remove(globals()[action]) # TODO: fix this
-        self.queens.append(globals()[action])
     
     def jester_effect(self, current_player:int):
         self.players[current_player].play(cards=[jester],game=self)

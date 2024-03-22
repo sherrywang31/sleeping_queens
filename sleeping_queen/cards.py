@@ -29,14 +29,21 @@ def defend(player:Player, game): # dragon -> knight, wand -> potion
         
 def take_queen(player:Player, game):
     opponent = game.players[0] if player == game.players[1] else game.players[1]
-    # simplify game: always take the queen with highest score
+    # simplify game: always take the queen with highest score. TODO: receive input from player
     opponent.queens.sort(key=lambda x: x.point)
-    if _can_add_queen(opponent.queens[0], player.queens):
-        player.queens.append(opponent.queens[0])
-        opponent.queens.remove(opponent.queens[0])
-    else: # if can't add queen, it's a cat vs dog situation. take the second highest queen
-        player.queens.append(opponent.queens[1])
-        opponent.queens.remove(opponent.queens[1])
+    queen = opponent.queens[-1]
+    if not _can_add_queen(queen, player.queens):
+        queen = opponent.queens[-2]
+    player.queens.append(queen)
+    opponent.queens.remove(queen)
+
+def sleep_queen(player:Player, game):
+    opponent = game.players[0] if player == game.players[1] else game.players[1]    
+    # simplify game: always take the queen with highest score. TODO: receive input from player
+    opponent.queens.sort(key=lambda x: x.point)
+    queen = opponent.queens[-1]
+    opponent.queens.remove(queen)
+    game.queen_pile.cards.append(queen)
 
 rose_queen = Card('Rose Queen', 5)
 cat_queen = Card('Cat Queen', 15)
@@ -48,7 +55,7 @@ queen_20 = Card('Queen 20', 20)
 king = Card('King',effect=wake_queen)
 jester = Card('Jester')
 knight = Card('Knight',effect=take_queen)
-potion = Card('Potion')
+potion = Card('Potion',effect=sleep_queen)
 wand = Card('Wand', effect=defend)
 dragon = Card('Dragon', effect=defend)
 one= Card('1', 1)

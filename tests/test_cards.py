@@ -33,14 +33,21 @@ class TestCard:
 
     def test_take_queen(self, player2, game):
         take_queen(player2, game)
-        assert player2.queens == [queen_5]
-        assert game.players[0].queens == [cat_queen]
+        assert game.players[0].queens == [queen_5]
+        assert game.players[1].queens == [cat_queen]
         player3 = Player(name='Player 3', hand=[], queens=[cat_queen])
         player4= Player(name='Player 4', hand=[], queens=[dog_queen, queen_5])
         game = Game([player3, player4])
         take_queen(player3, game)
         assert player3.queens == [cat_queen, queen_5]
         assert player4.queens == [dog_queen]
+    
+    def test_sleep_queen(self, player2, game):
+        sleep_queen(player2, game)
+        assert game.players[1].queens == []
+        assert game.players[0].queens == [queen_5]
+        print(game.queen_pile)
+        assert game.queen_pile == Deck(cards = [ dog_queen, rose_queen, queen_20, queen_15, cat_queen])
 
 
 
