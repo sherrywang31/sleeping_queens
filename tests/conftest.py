@@ -7,7 +7,7 @@ from sleeping_queen.game import Game
 def player1():
     return Player(name='Player 1', 
                   hand=[one,one,three, dragon, king], 
-                  queens=[five,cat_queen])
+                  queens=[queen_5,cat_queen])
 @pytest.fixture
 def player2():
     return Player(name='Player 2', 

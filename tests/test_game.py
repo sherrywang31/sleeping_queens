@@ -20,7 +20,10 @@ class TestGame:
         assert game._play_cards_legal(current_player = 0, cards_to_play = [one, one, five]) == False
         assert game._play_cards_legal(current_player = 1, cards_to_play = [potion]) == True
         assert game._play_cards_legal(current_player = 1, cards_to_play = [king]) == True
-        assert game._play_cards_legal(current_player = 1, cards_to_play = [two, three, five]) == True        
+        assert game._play_cards_legal(current_player = 1, cards_to_play = [two, three, five]) == True 
+        game.players[0].queens = [dog_queen]
+        game.players[1].queens = [cat_queen, queen_5]
+        assert game._play_cards_legal(current_player = 1, cards_to_play = [king]) == False
     
     def test_knight_effect(self):
         pass

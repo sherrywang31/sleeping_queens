@@ -2,7 +2,7 @@ from sleeping_queen.data_type import Card, Deck, Player
 from typing import List
 from itertools import combinations
 import sys
-from sleeping_queen.cards import king, jester, knight, potion, wand, dragon, one, two, three, four, five, six, seven, eight, nine, ten, cat_queen, dog_queen, rose_queen, queen_5, queen_10, queen_15, queen_20
+from sleeping_queen.cards import _can_add_queen, king, jester, knight, potion, wand, dragon, one, two, three, four, five, six, seven, eight, nine, ten, cat_queen, dog_queen, rose_queen, queen_5, queen_10, queen_15, queen_20
 
 ALL_CARDS = Deck([king] * 8 + 
             [jester] * 5 + 
@@ -34,7 +34,15 @@ class Game:
                     if sum(combo) == total:
                         return True
         return False
-
+    def _can_take_queen(self, current_player:int):
+        player = self.players[current_player]
+        opponent = 0 if current_player == 1 else 1
+        opponent = self.players[opponent]
+        if (opponent.queens == [cat_queen]) & (dog_queen in player.queens):
+            return False
+        elif (opponent.queens == [dog_queen]) & (cat_queen in player.queens):
+            return False
+        return True
     def _play_cards_legal(self, current_player:int, cards_to_play: List[Card]) -> bool:
         player = self.players[current_player]
         opponent = 0 if current_player == 1 else 1
@@ -42,15 +50,17 @@ class Game:
         if not all([card in player.hand for card in cards_to_play]):
             print(f'Invalid input. You do not have {cards_to_play} in hands. Try again.')
             return False
-        if any(card in [dragon, wand] for card in cards_to_play):
-            print(f'Invalid input. {cards_to_play} can not be played. Try again.')
-            return False
         if len(cards_to_play) == 1:
-            if cards_to_play[0] in [king, knight, potion]:
-                print(len(opponent.queens))
-                if len(opponent.queens) == 0:
+            if cards_to_play[0] in [dragon, wand]:
+                print(f'Invalid input. {cards_to_play} is a defend card; it can not be played. Try again.')
+                return False
+            if (cards_to_play[0] in [king, knight, potion]) & (len(opponent.queens) == 0):
                     print(f'Invalid input. {cards_to_play} can not be played because opponent has no queen. Try again.')
                     return False
+            if (cards_to_play[0] in [king, knight]) & (not self._can_take_queen(current_player)):
+                    print(f'Invalid input. can not take queen but {cards_to_play} is played. Try again.')
+                    return False
+
         else:
             if not all([card in [one, two, three, four, five, six, seven, eight, nine, ten] for card in cards_to_play]):
                 print(f'Invalid input. {cards_to_play} 1+ card played all must be number cards. Try again.')
@@ -65,21 +75,6 @@ class Game:
     
     def executeCardEffect(self, card:Card, player:Player):
         card.effect(game=self, player=player)
-
-    def knight_effect(self, current_player:int):
-        self.players[current_player].play(cards=[knight], game=self)
-        passive_player = 0 if current_player == 1 else 1
-        if dragon in self.players[passive_player].hand:
-            action = input('Do you want to play the dragon? (y/n)')
-            if action == 'y':
-                self.players[passive_player].play(cards=[dragon], game=self)
-                self.players[passive_player].draw(self, 1)
-                self.players[current_player].draw(self, 1)
-        action = input('Pick a queue from {opponent.queens}')
-        while action not in [queen.name for queen in self.players[passive_player].queens]:
-            action = input('Invalid input: {action}. Pick a queue from {opponent.queens}')
-        self.players[passive_player].queens.remove(globals()[action]) # TODO: fix this
-        self.players[current_player].queens.append(globals()[action])
         
     def potion_effect(self, current_player:int):
         self.players[current_player].play(cards=[potion],game=self)
@@ -105,10 +100,6 @@ class Game:
                 self.players[current_player].wake_queen(self.queen_pile)
             else:
                 self.players[0 if current_player == 1 else 1].wake_queen(self.queen_pile)
-
-    def king_effect(self, current_player:int):
-        self.players[current_player].play(cards=[king],game=self)
-        self.players[current_player].wake_queen(self.queen_pile)
         
     def step(self):
         if self.round == 0:
