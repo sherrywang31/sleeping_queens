@@ -75,16 +75,6 @@ class Game:
     
     def executeCardEffect(self, card:Card, player:Player):
         card.effect(game=self, player=player)
-    
-    def jester_effect(self, current_player:int):
-        self.players[current_player].play(cards=[jester],game=self)
-        while self.draw_pile[0] in [king, knight, potion, wand, dragon]:
-            self.players[current_player].draw(self, 1)
-        else:
-            if self.draw_pile[0] in [one, three, five, seven, nine]:
-                self.players[current_player].wake_queen(self.queen_pile)
-            else:
-                self.players[0 if current_player == 1 else 1].wake_queen(self.queen_pile)
         
     def step(self):
         if self.round == 0:

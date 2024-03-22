@@ -45,6 +45,18 @@ def sleep_queen(player:Player, game):
     opponent.queens.remove(queen)
     game.queen_pile.cards.append(queen)
 
+def jester_effect(player:Player, game):
+    opponent = game.players[0] if player == game.players[1] else game.players[1]
+    while game.draw_pile.cards[0] in [king, knight, potion, wand, dragon]:
+        player.draw(game, 1)
+    else:
+        card = game.draw_pile.cards.pop()
+        game.discard_pile.append(card)
+        if card in [one, three, five, seven, nine]:
+            wake_queen(player, game)
+        else:
+            wake_queen(opponent, game)
+
 rose_queen = Card('Rose Queen', 5)
 cat_queen = Card('Cat Queen', 15)
 dog_queen = Card('Dog Queen', 15)
@@ -53,7 +65,7 @@ queen_10 = Card('Queen 10', 10)
 queen_15 = Card('Queen 15', 15)
 queen_20 = Card('Queen 20', 20)
 king = Card('King',effect=wake_queen)
-jester = Card('Jester')
+jester = Card('Jester',effect=jester_effect)
 knight = Card('Knight',effect=take_queen)
 potion = Card('Potion',effect=sleep_queen)
 wand = Card('Wand', effect=defend)

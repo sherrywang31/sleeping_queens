@@ -48,7 +48,25 @@ class TestCard:
         assert game.players[0].queens == [queen_5]
         print(game.queen_pile)
         assert game.queen_pile == Deck(cards = [ dog_queen, rose_queen, queen_20, queen_15, cat_queen])
-
-
-
-
+    
+    def test_jester_effect_cannot_take_queen(self, player1, player2):
+        game = Game([player1, player2])
+        game.draw_pile = Deck(cards = [king, knight, one])
+        game.queen_pile = Deck(cards = [dog_queen, rose_queen, queen_20, queen_15])
+        jester_effect(player1, game)
+        assert game.players[0].hand == [one,one,three, dragon, king, king, knight]
+        assert game.draw_pile == Deck(cards = [])
+        assert game.queen_pile == Deck(cards = [dog_queen, rose_queen, queen_20, queen_15])
+        assert game.players[0].queens == [queen_5, cat_queen]
+    
+    def test_jester_effect_take_queen(self, player1, player2):
+        game = Game([player1, player2])
+        game.draw_pile = Deck(cards = [potion, two]) 
+        game.queen_pile = Deck(cards = [rose_queen, queen_20, queen_15])
+        game.discard_pile = []
+        jester_effect(player1, game)
+        assert game.players[0].hand == [one,one,three, dragon, king, potion]
+        assert game.draw_pile == Deck(cards = [])
+        assert game.discard_pile == [two]
+        assert game.queen_pile == Deck(cards = [queen_15])
+        assert game.players[1].queens == [rose_queen, queen_20]
