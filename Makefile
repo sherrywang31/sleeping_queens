@@ -6,7 +6,7 @@ SHELL = /bin/bash
 env:
 	python3.12 -m venv venv  # recommend using Python 3.10
 	source venv/bin/activate  # on Windows: venv\Scripts\activate
-	python3.12 -m pip install --upgrade pip setuptools wheel
+	#python3.12 -m pip install --upgrade pip setuptools wheel
 	python3.12 -m pip install -r requirements.txt
 
 # Cleaning
